@@ -13,18 +13,21 @@ class CVATPreprocessor():
 
     @staticmethod
     def get_all_image_polygons(image_name, annotation_path):
-        """Returns a list of all polygons for a given image name"""
+        """
+        Returns a dictionary of all polygons for the given image name.
+        The key is the label and the value is a list of polygons (= each a list of points) associated with that label.
+        """
         annotations = ET.parse(annotation_path).getroot()
         image = annotations.find(f"image[@name='{image_name}']")
         raw_polygons = image.findall("polygon")
         
         # Extract the label and the raw points for each polygon, 
         # parse the points to (x, y) and store each label-polygon pair in a list
-        processed_polygons = []
+        processed_polygons = {}
         for raw_polygon in raw_polygons:
             label, points = raw_polygon.attrib["label"], raw_polygon.attrib["points"].split(";")
             # Parse the points to (x, y) int pairs
             points = [(int(float(point.split(",")[0])), int(float(point.split(",")[1]))) for point in points]
-            processed_polygons.append((label, points))
+            processed_polygons[label] = processed_polygons.get(label, []) + [points]
 
         return processed_polygons
