@@ -1,0 +1,13 @@
+<launch>
+  <arg name="veh"/>
+
+
+  <group ns="$(arg veh)">
+    <node pkg="utilities" type="state_machine_node.py" name="state_machine_node" output="screen"/>
+    <node pkg="utilities" type="http_duckie_server.py" name="http_duckie_server" output="screen"/>
+    <include file="$(find driving)/launch/driving.launch"></include>
+  
+  </group>
+
+
+</launch>

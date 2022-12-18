@@ -1,0 +1,11 @@
+<package>
+  <name>perception</name>
+  <version>0.1.0</version>
+  <description>
+  lane following controller
+  </description>
+  <maintainer email="lukas.dirnberger@tum.de">Lukas Dirnberger</maintainer>
+  <license>None</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+</package>

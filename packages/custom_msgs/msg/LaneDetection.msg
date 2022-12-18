@@ -1,0 +1,2 @@
+float32 mid_point_v
+float32 mid_point_h

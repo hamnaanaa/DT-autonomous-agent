@@ -1,9 +1,9 @@
-docs/build
-*pyc
+**.pyc
+.DS_Store
 
-# documentation artifacts
-html/*
-!html/HTML_DOCS_WILL_BE_GENERATED_HERE
-
-# otherwise CI thinks index not clean
-*.resolved
+# Images used for ML training and trained models
+offline learning/semantic segmentation/data/frames/
+offline learning/object recognition/data/
+offline learning/object recognition/models
+# --- Images used for validation of perception processing nodes
+packages/perception/src/test_assets
