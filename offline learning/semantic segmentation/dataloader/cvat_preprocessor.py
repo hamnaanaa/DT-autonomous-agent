@@ -1,4 +1,3 @@
-from PIL import Image, ImageDraw, ImageFont
 import xml.etree.ElementTree as ET
 
 
@@ -31,3 +30,14 @@ class CVATPreprocessor():
             processed_polygons[label] = processed_polygons.get(label, []) + [points]
 
         return processed_polygons
+
+
+if __name__ == "__main__":
+    # Example usage
+    PATH_TO_ANNOTATIONS = "offline learning/semantic segmentation/data/annotations/"
+    PATH_TO_IMAGES = "offline learning/semantic segmentation/data/frames/"
+    CVAT_XML_FILENAME = "segmentation_annotation.xml"
+    imgs = CVATPreprocessor.get_all_image_names(PATH_TO_ANNOTATIONS + CVAT_XML_FILENAME)
+    polygons = CVATPreprocessor.get_all_image_polygons(imgs[0], PATH_TO_ANNOTATIONS + CVAT_XML_FILENAME)
+    print(f"Loaded {len(imgs)} images from {PATH_TO_ANNOTATIONS + CVAT_XML_FILENAME}")
+    print(f"Image '{imgs[0]} has {len(polygons)} polygon categories")

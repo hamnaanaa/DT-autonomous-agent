@@ -5,7 +5,7 @@ from torchvision import transforms
 import pytorch_lightning as pl
 from torchvision.models.segmentation import lraspp_mobilenet_v3_large, LRASPP_MobileNet_V3_Large_Weights
 
-class RoadSegmentationNetwork(pl.LightningModule):
+class DTSegmentationNetwork(pl.LightningModule):
     """CNN for semantic segmentation."""
     def __init__(self, hparams):
         """
@@ -46,7 +46,7 @@ class RoadSegmentationNetwork(pl.LightningModule):
         self.model.classifier.low_classifier = torch.nn.Conv2d(in_channels=40, out_channels=hparams['num_classes'], kernel_size=(1, 1), stride=(1, 1))
         self.model.classifier.high_classifier = torch.nn.Conv2d(in_channels=128, out_channels=hparams['num_classes'], kernel_size=(1, 1), stride=(1, 1))
         # Integrate softmax layer into the model to avoid having to apply it manually 
-        self.model.classifier.add_module("softmax", torch.nn.Softmax(dim=1))
+        self.model.classifier.add_module("softmax", torch.nn.Softmax())
 
     def forward(self, x):
         return self.model(x)["out"]
@@ -55,19 +55,19 @@ class RoadSegmentationNetwork(pl.LightningModule):
         x, y = batch
         y_hat = self(x)
         
-        # print(f'x: {x.shape}, y: {y.shape}, y_hat: {y_hat.shape}')
+        print(f'x: {x.shape}, y: {y.shape}, y_hat: {y_hat.shape}')
         
-        loss = F.cross_entropy(y_hat, y)
+        loss = F.cross_entropy(y_hat, y, reduction='mean')
         self.log("loss", loss)
         return loss
     
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.forward(x)
+        y_hat = self(x)
         
-        # print(f'x: {x.shape}, y: {y.shape}, y_hat: {y_hat.shape}')
+        print(f'x: {x.shape}, y: {y.shape}, y_hat: {y_hat.shape}')
         
-        val_loss = F.cross_entropy(y_hat, y)
+        val_loss = F.cross_entropy(y_hat, y, reduction='mean')
         self.log('val_loss', val_loss)
         return val_loss
 
@@ -93,5 +93,5 @@ class RoadSegmentationNetwork(pl.LightningModule):
 
 
 if __name__ == '__main__':
-    model = RoadSegmentationNetwork(hparams={'num_classes': 5, 'learning_rate': 0.001, 'weight_decay': 0.0001, 'lr_decay': 0.1})
+    model = DTSegmentationNetwork(hparams={'num_classes': 5, 'learning_rate': 0.001, 'weight_decay': 0.0001, 'lr_decay': 0.1})
     print(model)

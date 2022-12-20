@@ -7,3 +7,6 @@ offline learning/object recognition/data/
 offline learning/object recognition/models
 # --- Images used for validation of perception processing nodes
 packages/perception/src/test_assets
+
+# Lightning logs
+lightning_logs/

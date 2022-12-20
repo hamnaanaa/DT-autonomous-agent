@@ -4,7 +4,8 @@ import torch.utils.data
 from PIL import Image, ImageDraw
 from torchvision import transforms
 
-from cvat_preprocessor import CVATPreprocessor
+from . import cvat_preprocessor as cvat
+# from cvat_preprocessor import CVATPreprocessor
 
 DEBUG = False
 
@@ -27,7 +28,7 @@ class DTSegmentationDataset(torch.utils.data.Dataset):
     def __init__(self):
         super(DTSegmentationDataset, self).__init__()
         # Store the list of all image names
-        self.imgs = CVATPreprocessor.get_all_image_names(self.PATH_TO_ANNOTATIONS + self.CVAT_XML_FILENAME)
+        self.imgs = cvat.CVATPreprocessor.get_all_image_names(self.PATH_TO_ANNOTATIONS + self.CVAT_XML_FILENAME)
 
     def __getitem__(self, idx):
         image_name = self.imgs[idx]
@@ -37,11 +38,11 @@ class DTSegmentationDataset(torch.utils.data.Dataset):
         img = Image.open(self.PATH_TO_IMAGES + image_name).convert("RGB")
         
         # load the associated segmentation mask (list of polygons)
-        all_polygons = CVATPreprocessor.get_all_image_polygons(image_name, self.PATH_TO_ANNOTATIONS + self.CVAT_XML_FILENAME)
+        all_polygons = cvat.CVATPreprocessor.get_all_image_polygons(image_name, self.PATH_TO_ANNOTATIONS + self.CVAT_XML_FILENAME)
         
         # Create a target image with the same spacial dimensions as the original image 
         # but a separate channel for each label
-        target = np.zeros((len(self.SEGM_LABELS), img.size[1], img.size[0])).astype(np.float32)
+        target = np.zeros((img.size[1], img.size[0])).astype(np.longlong)
         
         # Fill each channel with 1s where the corresponding label is present and 0s otherwise
         for label, polygons in all_polygons.items():
@@ -55,8 +56,8 @@ class DTSegmentationDataset(torch.utils.data.Dataset):
 
             mask = np.array(mask) == 255
             if DEBUG:
-                print(f"Label '{label}' has {np.sum(mask)} pixels. Assigning them to channel {self.SEGM_LABELS[label]['id']}")
-            target[self.SEGM_LABELS[label]['id']][mask] = 1.0
+                print(f"Label '{label}' has {np.sum(mask)} pixels. Assigning them a value {self.SEGM_LABELS[label]['id']}")
+            target[mask] = self.SEGM_LABELS[label]['id']
         
         img = transforms.Compose([transforms.ToTensor()])(img)
         target = torch.from_numpy(target)
@@ -71,9 +72,9 @@ class DTSegmentationDataset(torch.utils.data.Dataset):
         """
         Converts a label image (with one channel per label) to an RGB image.
         """
-        rgb_img = np.zeros((label_img.shape[1], label_img.shape[2], 3), dtype=np.uint8)
+        rgb_img = np.zeros((label_img.shape[0], label_img.shape[1], 3), dtype=np.uint8)
         for label, label_info in DTSegmentationDataset.SEGM_LABELS.items():
-            mask = label_img[label_info['id'], :, :] == 1.0
+            mask = label_img == label_info['id']
             rgb_img[mask] = label_info['rgb_value']
         return rgb_img
 
