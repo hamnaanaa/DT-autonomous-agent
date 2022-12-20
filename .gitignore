@@ -2,11 +2,11 @@
 .DS_Store
 
 # Images used for ML training
-offline learning/semantic segmentation/data/frames/
+offline learning/semantic segmentation/data/frames*/
 offline learning/object recognition/data/
 # Trained models
 offline learning/object recognition/models
-model.pt
+model*.pt
 # --- Images used for perception testing of processing nodes
 packages/perception/src/test_assets
 

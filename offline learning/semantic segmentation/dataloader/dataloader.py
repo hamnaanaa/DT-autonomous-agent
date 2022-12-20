@@ -44,6 +44,9 @@ class DTSegmentationDataset(torch.utils.data.Dataset):
         # but a separate channel for each label
         target = np.zeros((img.size[1], img.size[0])).astype(np.longlong)
         
+        # Generate a random angle for rotation only once for both the image and the mask
+        random_angle = np.random.randint(-10, 10)
+        
         # Fill each channel with 1s where the corresponding label is present and 0s otherwise
         for label, polygons in all_polygons.items():
             # Create an empty bitmask for the current label and draw all label-associated polygons on it
@@ -53,13 +56,24 @@ class DTSegmentationDataset(torch.utils.data.Dataset):
                 drawer.polygon(polygon, outline=255, fill=255)
             # Show the mask for extra debugging
             # mask.show()
+            
+            # Rotate the mask
+            mask = transforms.Compose([
+                transforms.RandomRotation(degrees=10)
+            ])(mask)
+            mask = transforms.functional.rotate(mask, random_angle)
 
             mask = np.array(mask) == 255
             if DEBUG:
                 print(f"Label '{label}' has {np.sum(mask)} pixels. Assigning them a value {self.SEGM_LABELS[label]['id']}")
             target[mask] = self.SEGM_LABELS[label]['id']
         
-        img = transforms.Compose([transforms.ToTensor()])(img)
+        img = transforms.Compose([
+            transforms.ToTensor(), 
+            transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.2)
+        ])(img)
+        img = transforms.functional.rotate(img, random_angle)
+        
         target = torch.from_numpy(target)
         
         return img, target
