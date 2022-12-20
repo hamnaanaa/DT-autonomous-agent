@@ -55,7 +55,7 @@ class DTSegmentationNetwork(pl.LightningModule):
         x, y = batch
         y_hat = self(x)
         
-        print(f'x: {x.shape}, y: {y.shape}, y_hat: {y_hat.shape}')
+        # print(f'x: {x.shape}, y: {y.shape}, y_hat: {y_hat.shape}')
         
         loss = F.cross_entropy(y_hat, y, reduction='mean')
         self.log("loss", loss)
@@ -65,7 +65,7 @@ class DTSegmentationNetwork(pl.LightningModule):
         x, y = batch
         y_hat = self(x)
         
-        print(f'x: {x.shape}, y: {y.shape}, y_hat: {y_hat.shape}')
+        # print(f'x: {x.shape}, y: {y.shape}, y_hat: {y_hat.shape}')
         
         val_loss = F.cross_entropy(y_hat, y, reduction='mean')
         self.log('val_loss', val_loss)
