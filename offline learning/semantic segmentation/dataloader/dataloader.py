@@ -42,7 +42,7 @@ class DTSegmentationDataset(torch.utils.data.Dataset):
         
         # Create a target image with the same spacial dimensions as the original image 
         # but a separate channel for each label
-        target = np.zeros((img.size[1], img.size[0])).astype(np.longlong)
+        target = np.zeros((640, 480)).astype(np.longlong)
         
         # Generate a random angle for rotation only once for both the image and the mask
         random_angle = np.random.randint(-10, 10)
@@ -59,7 +59,7 @@ class DTSegmentationDataset(torch.utils.data.Dataset):
             
             # Rotate the mask
             mask = transforms.Compose([
-                transforms.RandomRotation(degrees=10)
+                transforms.Resize((640, 480))
             ])(mask)
             mask = transforms.functional.rotate(mask, random_angle)
 
@@ -70,7 +70,10 @@ class DTSegmentationDataset(torch.utils.data.Dataset):
         
         img = transforms.Compose([
             transforms.ToTensor(), 
-            transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.2)
+            transforms.Resize((640, 480)),
+            transforms.ColorJitter(brightness=0.7, contrast=0.6, saturation=0.2),
+            # Normalize the image with the mean and standard deviation of the ImageNet dataset
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])(img)
         img = transforms.functional.rotate(img, random_angle)
         
