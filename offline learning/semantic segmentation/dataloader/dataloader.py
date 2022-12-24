@@ -23,6 +23,7 @@ class DTSegmentationDataset(torch.utils.data.Dataset):
         'Opposite Lane': {'id': 2, 'rgb_value': [245, 147, 49]}, # orange
         'Obstacle': {'id': 3, 'rgb_value': [184, 61, 245]}, # purple
         'Road End': {'id': 4, 'rgb_value': [250, 50, 83]}, # red
+        'Intersection': {'id': 5, 'rgb_value': [50, 183, 250]}, # blue
     }
     
     def __init__(self):
@@ -49,24 +50,25 @@ class DTSegmentationDataset(torch.utils.data.Dataset):
         
         # Fill each channel with 1s where the corresponding label is present and 0s otherwise
         for label, polygons in all_polygons.items():
-            # Create an empty bitmask for the current label and draw all label-associated polygons on it
-            mask = Image.new('L', img.size, 0)
-            drawer = ImageDraw.Draw(mask)
-            for polygon in polygons:
-                drawer.polygon(polygon, outline=255, fill=255)
-            # Show the mask for extra debugging
-            # mask.show()
-            
-            # Rotate the mask
-            mask = transforms.Compose([
-                transforms.Resize((640, 480))
-            ])(mask)
-            mask = transforms.functional.rotate(mask, random_angle)
+            if label in ['Ego Lane', 'Opposite Lane', 'Intersection']:
+                # Create an empty bitmask for the current label and draw all label-associated polygons on it
+                mask = Image.new('L', img.size, 0)
+                drawer = ImageDraw.Draw(mask)
+                for polygon in polygons:
+                    drawer.polygon(polygon, outline=255, fill=255)
+                # Show the mask for extra debugging
+                # mask.show()
+                
+                # Rotate the mask
+                mask = transforms.Compose([
+                    transforms.Resize((640, 480))
+                ])(mask)
+                mask = transforms.functional.rotate(mask, random_angle)
 
-            mask = np.array(mask) == 255
-            if DEBUG:
-                print(f"Label '{label}' has {np.sum(mask)} pixels. Assigning them a value {self.SEGM_LABELS[label]['id']}")
-            target[mask] = self.SEGM_LABELS[label]['id']
+                mask = np.array(mask) == 255
+                if DEBUG:
+                    print(f"Label '{label}' has {np.sum(mask)} pixels. Assigning them a value {self.SEGM_LABELS[label]['id']}")
+                target[mask] = self.SEGM_LABELS['Ego Lane']['id']
         
         img = transforms.Compose([
             transforms.ToTensor(), 
