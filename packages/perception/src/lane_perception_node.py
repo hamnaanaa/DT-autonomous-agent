@@ -98,26 +98,40 @@ class LanePerceptionNode(DTROS):
     def cb_img(self, message):
         # if self.camera_config is None or self.camera_header is None:
         #    return
-        self.loginfo("Image received.")
+        if not self.model:
+            self.loginfo("[HAM] Model is not initialized yet!")
+            return
         
+        # Convert the image to a PIL image and then back to bytes to test the conversion
         image = Image.open(io.BytesIO(message.data)).convert("RGB")
-        # self.loginfo(f"[HAM] Image size: {image.size}. Convert to tensor...")
-        image = transforms.ToTensor()(image)
-        self.loginfo(f"[HAM] Tensor image size: {image.size()}")
+        self.loginfo(f"[HAM] Image received and converted to PIL Image with size: {image.size}")
         
-        result = torch.argmax(self.model(image.unsqueeze(0)), dim=1)[0]
-        self.loginfo(f"[HAM] Result size: {result.size()}. Create a CompressedImage...")
+        # RAW back -> And then back to bytes
+        # buf = io.BytesIO()
+        # image.save(buf, format="JPEG")
+
+        
+        
+        image = transforms.ToTensor()(image)
+        # self.loginfo(f"[HAM] Tensor image size: {image.size()}")
+        
+        # result = torch.argmax(self.model(image.unsqueeze(0)), dim=1)[0]
+        # self.loginfo(f"[HAM] Result size: {result.size()}. Create a CompressedImage...")
         
         # Convert the result to a CompressedImage to publish on ROS topic
         msg = CompressedImage()
         msg.header.stamp = rospy.Time.now()
         msg.format = "jpeg"
         buf = io.BytesIO()
-        transforms.ToPILImage()(result).save(buf, format="JPEG")
+        transforms.ToPILImage()(image).save(buf, format="JPEG")
         msg.data = buf.getvalue()
         
-        self.loginfo(f"[HAM] Created a message to publish: {msg}\n{msg.data}")
+        
+        self.loginfo(f"[HAM] Created a message to publish.")
         self.line_pub.publish(msg)
+        
+        
+        
         
         
         # image = self.bridge.compressed_imgmsg_to_cv2(message, desired_encoding="passthrough")
@@ -151,12 +165,12 @@ class LanePerceptionNode(DTROS):
         # line_img_msg = self.bridge.cv2_to_compressed_imgmsg(line_img)
         # red_line_img_msg = self.bridge.cv2_to_compressed_imgmsg(rect_image)
 
-        det = LaneDetection()
+        # det = LaneDetection()
         # if mid_point is not None:
         #     det.mid_point_h = mid_point[0] / w
         #     det.mid_point_v = mid_point[1] / h
 
-        self.lane_det_pub.publish(det)
+        # self.lane_det_pub.publish(det)
         # self.line_pub.publish(pred_image)
         # self.red_line_pub.publish(red_line_img_msg)
 
