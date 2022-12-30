@@ -1,1 +1,4 @@
 # LIST YOUR PYTHON3 PACKAGES HERE
+torch
+torchvision
+pytorch_lightning

@@ -45,7 +45,7 @@ class CameraConfig:
             config_file = os.path.dirname(os.path.realpath(__file__))
             config_file = os.path.join(config_file, calibration_file_path)
             with open(config_file, 'r') as stream:
-                params = yaml.load(stream)
+                params = yaml.safe_load(stream)
         except (IOError, yaml.YAMLError):
             raise IOError("Unknown or invalid parameters file !")
 

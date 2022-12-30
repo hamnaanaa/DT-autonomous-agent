@@ -56,7 +56,7 @@ ARG PIP_INDEX_URL="https://pypi.org/simple"
 ENV PIP_INDEX_URL=${PIP_INDEX_URL}
 RUN echo PIP_INDEX_URL=${PIP_INDEX_URL}
 COPY ./dependencies-py3.* "${REPO_PATH}/"
-RUN python3 -m pip install  -r ${REPO_PATH}/dependencies-py3.txt
+RUN python3 -m pip install  -r ${REPO_PATH}/dependencies-py3.txt --ignore-installed
 
 # copy the source code
 COPY ./packages "${REPO_PATH}/packages"
@@ -86,3 +86,5 @@ LABEL org.duckietown.label.module.type="${REPO_NAME}" \
     org.duckietown.label.maintainer="${MAINTAINER}"
 # <== Do not change the code above this line
 # <==================================================
+
+ENV LD_PRELOAD "/usr/local/lib/python3.8/dist-packages/torch/lib/libgomp-d22c30c5.so.1"
