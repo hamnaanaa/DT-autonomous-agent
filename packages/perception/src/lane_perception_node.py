@@ -89,6 +89,11 @@ class LanePerceptionNode(DTROS):
         self.model.load_state_dict(torch.load(path_to_model))
         self.loginfo("[HAM] Loaded model with state dict!")
         
+        # Check for CUDA support
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.loginfo(f"[HAM] Using device: {self.device}")
+        # self.model.to(self.device)
+        
         self.avg_process_time = 0
         
 

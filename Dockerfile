@@ -28,6 +28,30 @@ ARG BASE_TAG
 ARG BASE_IMAGE
 ARG LAUNCHER
 
+#! add cuda to path
+ENV PATH /usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
+ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
+
+#! nvidia-container-runtime
+# https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/user-guide.html
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES all
+# TODO: Fix requreiment to elimitate old GPU to run the dt-ml image
+#ENV NVIDIA_REQUIRE_ARCH "maxwell pascal volta turing ampere"
+#ENV NVIDIA_REQUIRE_CUDA "cuda>=10.2"
+
+#! VERSIONING CONFIGURATION
+# this is mainly for AMD64 as on Jetson it comes with the image
+ENV CUDA_VERSION 10.2.89
+ENV CUDA_PKG_VERSION 10-2=$CUDA_VERSION-1
+ENV NCCL_VERSION 2.8.4
+ENV CUDNN_VERSION 8.1.1.33
+
+ENV PYTORCH_VERSION 1.7.0
+ENV TORCHVISION_VERSION 0.8.1
+ENV TENSORRT_VERSION 7.1.3.4
+ENV PYCUDA_VERSION 2021.1
+
 # check build arguments
 RUN dt-build-env-check "${REPO_NAME}" "${MAINTAINER}" "${DESCRIPTION}"
 
@@ -55,8 +79,14 @@ RUN dt-apt-install ${REPO_PATH}/dependencies-apt.txt
 ARG PIP_INDEX_URL="https://pypi.org/simple"
 ENV PIP_INDEX_URL=${PIP_INDEX_URL}
 RUN echo PIP_INDEX_URL=${PIP_INDEX_URL}
+
+# install Torch
+ARG ARCH
+COPY assets/${ARCH} "${REPO_PATH}/install"
+RUN "${REPO_PATH}/install/install.sh"
+
 COPY ./dependencies-py3.* "${REPO_PATH}/"
-RUN python3 -m pip install  -r ${REPO_PATH}/dependencies-py3.txt --ignore-installed
+RUN python3 -m pip install  -r ${REPO_PATH}/dependencies-py3.txt
 
 # copy the source code
 COPY ./packages "${REPO_PATH}/packages"
@@ -87,4 +117,4 @@ LABEL org.duckietown.label.module.type="${REPO_NAME}" \
 # <== Do not change the code above this line
 # <==================================================
 
-ENV LD_PRELOAD "/usr/local/lib/python3.8/dist-packages/torch/lib/libgomp-d22c30c5.so.1"
+# ENV LD_PRELOAD "/usr/local/lib/python3.8/dist-packages/torch/lib/libgomp-d22c30c5.so.1"

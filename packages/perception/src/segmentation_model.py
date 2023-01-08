@@ -1,6 +1,9 @@
 import torch
+print(f"[HAM] Use pytorch of version: {torch.__version__}")
 import torch.utils as utils
 import torch.nn.functional as F
+import torchvision
+print(f"[HAM] Use torchvision of version: {torchvision.__version__}")
 from torchvision import transforms
 import pytorch_lightning as pl
 from torchvision.models.segmentation import lraspp_mobilenet_v3_large, LRASPP_MobileNet_V3_Large_Weights
