@@ -12,3 +12,6 @@ packages/perception/src/test_assets
 
 # Lightning logs
 lightning_logs/
+
+# --- Images used for perception testing of processing nodes
+testing/out

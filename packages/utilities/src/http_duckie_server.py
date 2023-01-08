@@ -6,11 +6,17 @@ from duckietown.dtros import DTROS, NodeType
 from std_msgs.msg import String
 from duckietown_msgs.msg import FSMState, Pose2DStamped
 from duckietown_msgs.srv import SetFSMState
-from sensor_msgs.msg import Range
+from sensor_msgs.msg import Range, CompressedImage
+
+from rospy.numpy_msg import numpy_msg
 
 from flask import Flask, request, jsonify
 import random
 import json
+
+import io
+from PIL import Image
+import numpy as np
 
 app = Flask(__name__)
 node = None
@@ -54,9 +60,21 @@ def index():
         json_status = json.dumps(mock_state)
         return json_status
     else:
-
         json_status = json.dumps(node.get_status())
         return json_status
+
+@app.route('/image', methods=['GET'])
+def handle_image_GET():
+    rospy.loginfo("[HAM] Got a GET request for image")
+    if node is None:
+        rospy.loginfo("[HAM] Node is not initialized to be able to dump image")
+        return {'status': 'node not initialized'}
+    else:
+        rospy.loginfo(f"[HAM] Node is initialized. Will try to dump image")
+        # Send node.image string over HTTP
+        return node.image
+
+
 
 
 @app.route('/route', methods=['POST'])
@@ -114,6 +132,10 @@ class HTTPDuckieServer(DTROS):
         
         # --- Route init ---
         self.route = []
+        
+        # --- Image init ---
+        self.image = None
+        self.sub_image = rospy.Subscriber(f"/{self.veh_name}/camera_node/image/compressed", numpy_msg(CompressedImage), self.handle_image, queue_size=1, buff_size=1000000)
 
         # --- Sensor reading ---
         # Position
@@ -184,6 +206,10 @@ class HTTPDuckieServer(DTROS):
         state_machine_switch_node = rospy.ServiceProxy(
             f"/{self.veh_name}/state_machine_node/change_mode", SetFSMState)
         state_machine_switch_node(new_state)
+    
+    def handle_image(self, data):
+        """Store the fetched compressed image string"""
+        self.image = data.data
 
     def handle_ToF(self, data):
         """Store the fetched ToF measurement. For out of range measurements, the provided sensor value is >8.0 and the actual value is set to 0.0 instead"""
@@ -199,8 +225,6 @@ class HTTPDuckieServer(DTROS):
                 self.loginfo(f"Popped {old_state} from the route, it's now {self.route}")
             else:
                 rospy.loginfo("Route is empty, no command to pop")
-
-        
 
     def handle_pose(self, data):
         """Store the fetched odometry pose"""
