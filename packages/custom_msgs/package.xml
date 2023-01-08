@@ -4,7 +4,7 @@
   <description>
   contains custom_msgs for our FA
   </description>
-  <maintainer email="lukas.dirnberger@tum.de">Lukas Dirnberger</maintainer>
+  <maintainer email="hamudi.naanaa@tum.de">Hamudi Naanaa</maintainer>
   <license>None</license>
 
   <buildtool_depend>catkin</buildtool_depend>
