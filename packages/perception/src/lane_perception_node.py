@@ -116,17 +116,20 @@ class LanePerceptionNode(DTROS):
             self.loginfo("[HAM] Model is not initialized yet!")
             return
         
-        time = rospy.Time.now()
-        # self.loginfo(f"[HAM] Received image at time: {time}")
+        start_time = rospy.Time.now()
         # Convert the image to a PIL image and then back to bytes to test the conversion
         image = Image.open(io.BytesIO(message.data)).convert("RGB")
-        # self.loginfo(f"[HAM] Image received and converted to PIL Image with size: {image.size}")
+        time_to_pil = rospy.Time.now()
+        # self.loginfo(f"[HAM] Converting image to PIL took {(rospy.Time.now() - delta_time).to_sec()} seconds")
 
         image = transforms.ToTensor()(image)
+        time_to_tensor = rospy.Time.now()
         # self.loginfo(f"[HAM] Tensor image size: {image.size()}")
         
         image = torch.argmax(self.model(image.unsqueeze(0)), dim=1)[0]
+        time_to_pred = rospy.Time.now()
         image = self._pred_to_img(image, {0: [0, 0, 0], 1: [0, 255, 0]})
+        time_to_compressed_img = rospy.Time.now()
         # self.loginfo(f"[HAM] Prediction size: {image.shape}. Create a CompressedImage from it. Here are the first 10 values: {image[:10]}")
         
         # Convert the result to a CompressedImage to publish on ROS topic
@@ -136,16 +139,22 @@ class LanePerceptionNode(DTROS):
         buf = io.BytesIO()
         image.save(buf, format="JPEG")
         msg.data = buf.getvalue()
+        time_to_save = rospy.Time.now()
         
-        process_time = (rospy.Time.now() - time).to_sec()
+        process_time = (rospy.Time.now() - start_time).to_sec()
         self.avg_process_time = process_time if self.avg_process_time == 0 else (self.avg_process_time * 0.75 + process_time * 0.25)
-        self.loginfo(f"[HAM] Created a message to publish. Process time (curr/avg): {process_time}/{self.avg_process_time}")
+        self.loginfo(f"""
+        [HAM] Created a message to publish. Here are the times summary:
+        - Received image at: {start_time.to_sec()}
+        - Process time (curr/avg): {process_time}/{self.avg_process_time}
+        - Time to PIL: {(time_to_pil - start_time).to_sec()}
+        - Time to Tensor: {(time_to_tensor - time_to_pil).to_sec()}
+        - Time to Prediction: {(time_to_pred - time_to_tensor).to_sec()}
+        - Time to CompressedImage: {(time_to_compressed_img - time_to_pred).to_sec()}
+        - Time to Save: {(time_to_save - time_to_compressed_img).to_sec()}
+        """)
         self.line_pub.publish(msg)
-        
-        
-        
-        
-        
+    
         # image = self.bridge.compressed_imgmsg_to_cv2(message, desired_encoding="passthrough")
 
         # gamma = rospy.get_param(f"/{self.veh_name}/lane_perception_node/gamma")
