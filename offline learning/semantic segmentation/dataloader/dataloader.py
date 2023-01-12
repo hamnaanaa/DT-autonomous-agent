@@ -19,11 +19,13 @@ class DTSegmentationDataset(torch.utils.data.Dataset):
     CVAT_XML_FILENAME = "segmentation_annotation.xml"
     SEGM_LABELS = {
         'Background': {'id': 0, 'rgb_value': [0, 0, 0]}, # black
-        'Ego Lane': {'id': 1, 'rgb_value': [102, 255, 102]}, # green
-        'Opposite Lane': {'id': 2, 'rgb_value': [245, 147, 49]}, # orange
-        'Obstacle': {'id': 3, 'rgb_value': [184, 61, 245]}, # purple
-        'Road End': {'id': 4, 'rgb_value': [250, 50, 83]}, # red
+        'Middle Lane': {'id': 1, 'rgb_value': [255, 255, 0]}, # yellow
+        'Ego Lane': {'id': 2, 'rgb_value': [102, 255, 102]}, # green
+        'Side Lane': {'id': 3, 'rgb_value': [255, 255, 255]}, # white
+        'Opposite Lane': {'id': 4, 'rgb_value': [245, 147, 49]}, # orange
         'Intersection': {'id': 5, 'rgb_value': [50, 183, 250]}, # blue
+        'Road End': {'id': 6, 'rgb_value': [250, 50, 83]}, # red
+        'Obstacle': {'id': 7, 'rgb_value': [184, 61, 245]}, # purple
     }
     
     def __init__(self):
@@ -43,36 +45,46 @@ class DTSegmentationDataset(torch.utils.data.Dataset):
         
         # Create a target image with the same spacial dimensions as the original image 
         # but a separate channel for each label
-        target = np.zeros((640, 480)).astype(np.longlong)
+        target = np.zeros((480, 640)).astype(np.longlong)
         
         # Generate a random angle for rotation only once for both the image and the mask
         random_angle = np.random.randint(-10, 10)
         
         # Fill each channel with 1s where the corresponding label is present and 0s otherwise
-        for label, polygons in all_polygons.items():
-            if label in ['Ego Lane', 'Opposite Lane', 'Intersection']:
-                # Create an empty bitmask for the current label and draw all label-associated polygons on it
-                mask = Image.new('L', img.size, 0)
-                drawer = ImageDraw.Draw(mask)
-                for polygon in polygons:
-                    drawer.polygon(polygon, outline=255, fill=255)
-                # Show the mask for extra debugging
-                # mask.show()
-                
-                # Rotate the mask
-                mask = transforms.Compose([
-                    transforms.Resize((640, 480))
-                ])(mask)
-                mask = transforms.functional.rotate(mask, random_angle)
+        # Sort the labels by their corresponding IDs to ensure that the channels are filled in the correct order
+        for label, polygons in sorted(all_polygons.items(), key=lambda x: self.SEGM_LABELS[x[0]]['id']):
+            
+            # Skip classes here if needed
+            if label in ['Obstacle', 'Road End']:
+                continue
+            
+            # Create an empty bitmask for the current label and draw all label-associated polygons on it
+            mask = Image.new('L', img.size, 0)
+            drawer = ImageDraw.Draw(mask)
+            for polygon in polygons:
+                drawer.polygon(polygon, outline=255, fill=255)
+            # Show the mask for extra debugging
+            # mask.show()
+            
+            # Rotate the mask
+            # mask = transforms.Compose([
+            #     transforms.Resize((480, 640))
+            # ])(mask)
+            mask = transforms.functional.rotate(mask, random_angle)
 
-                mask = np.array(mask) == 255
-                if DEBUG:
-                    print(f"Label '{label}' has {np.sum(mask)} pixels. Assigning them a value {self.SEGM_LABELS[label]['id']}")
+            mask = np.array(mask) == 255
+            if DEBUG:
+                print(f"Label '{label}' has {np.sum(mask)} pixels. Assigning them a value {self.SEGM_LABELS[label]['id']}")
+            
+            # Merge three road classes into one to improve the performance of the model
+            if label in ['Ego Lane', 'Opposite Lane', 'Intersection']:
                 target[mask] = self.SEGM_LABELS['Ego Lane']['id']
+            else:
+                target[mask] = self.SEGM_LABELS[label]['id']
         
         img = transforms.Compose([
             transforms.ToTensor(), 
-            transforms.Resize((640, 480)),
+            # transforms.Resize((480, 640)),
             transforms.ColorJitter(brightness=0.7, contrast=0.6, saturation=0.2),
             # Normalize the image with the mean and standard deviation of the ImageNet dataset
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -80,6 +92,10 @@ class DTSegmentationDataset(torch.utils.data.Dataset):
         img = transforms.functional.rotate(img, random_angle)
         
         target = torch.from_numpy(target)
+        
+        # Cut the top 30% of the image and the target to remove the far-away parts of the scene
+        img = img[:, (64 * 3):, :]
+        target = target[(64 * 3):, :]
         
         return img, target
     
@@ -106,5 +122,6 @@ if __name__ == "__main__":
     if DEBUG:
         dataset = DTSegmentationDataset()
         image, target = dataset[0]
+        print(image.shape)
         transforms.ToPILImage()(image).show()
         transforms.ToPILImage()(DTSegmentationDataset.label_img_to_rgb(target)).show()

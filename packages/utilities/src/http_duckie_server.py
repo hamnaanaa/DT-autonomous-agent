@@ -4,7 +4,7 @@ import rospy
 
 from duckietown.dtros import DTROS, NodeType
 from std_msgs.msg import String
-from duckietown_msgs.msg import FSMState, Pose2DStamped
+from duckietown_msgs.msg import FSMState, Pose2DStamped, Twist2DStamped
 from duckietown_msgs.srv import SetFSMState
 from sensor_msgs.msg import Range, CompressedImage
 
@@ -63,6 +63,7 @@ def index():
         json_status = json.dumps(node.get_status())
         return json_status
 
+
 @app.route('/image', methods=['GET'])
 def handle_image_GET():
     rospy.loginfo("[HAM] Got a GET request for image")
@@ -73,8 +74,6 @@ def handle_image_GET():
         rospy.loginfo(f"[HAM] Node is initialized. Will try to dump image")
         # Send node.image string over HTTP
         return node.image
-
-
 
 
 @app.route('/route', methods=['POST'])
@@ -91,16 +90,39 @@ def handle_POST():
     return {'status': 'route received'}
 
 
+@app.route('/drive', methods=['PUT'])
+def handle_drive_PUT():
+    if node is None:
+        rospy.loginfo("Node is not initialized")
+        return {'status': 'node not initialized'}
+    
+    v, omega = request.json['v'], request.json['omega']
+    rospy.loginfo(f"[HTTP Server] Got a PUT request with JSON: {request.json}. Parsed payload will be given to state machine: {v}, {omega}")
+    # Publish the drive command
+    cmd = Twist2DStamped()
+    cmd.v = v
+    cmd.omega = omega
+    node.pub_wheel_cmd.publish(cmd)
+    rospy.loginfo(f"[HTTP Server] Sent drive command")
+    # Wait for 2 seconds
+    rospy.sleep(2)
+    # Stop the robot
+    cmd.v = 0
+    cmd.omega = 0
+    node.pub_wheel_cmd.publish(cmd)
+    rospy.loginfo(f"[HTTP Server] Sent stop command")
+    return {'status': 'drive command executed'}
+
+
 @app.route('/state', methods=['PUT'])
 def handle_PUT():
     if node is None:
         rospy.loginfo("Node is not initialized")
         return {'state': 'node not initialized'}
-    rospy.loginfo(
-            f"[HTTP Server] Got a PUT request with JSON: {request.json}")
+    
+    rospy.loginfo(f"[HTTP Server] Got a PUT request with JSON: {request.json}")
     new_state = request.json['state']
-    rospy.loginfo(
-        f"[HTTP Server] Parsed payload will be given to state machine: {new_state}")
+    rospy.loginfo(f"[HTTP Server] Parsed payload will be given to state machine: {new_state}")
     if new_state == "CONTINUE":
         if node.route[0] == "IL":
             node.update_state('TURN_LEFT')
@@ -133,9 +155,10 @@ class HTTPDuckieServer(DTROS):
         # --- Route init ---
         self.route = []
         
-        # --- Image init ---
+        # --- Image processing ---
         self.image = None
         self.sub_image = rospy.Subscriber(f"/{self.veh_name}/camera_node/image/compressed", numpy_msg(CompressedImage), self.handle_image, queue_size=1, buff_size=1000000)
+        self.pub_wheel_cmd = rospy.Publisher(f"/{self.veh_name}/lane_follow_node/car_cmd", Twist2DStamped, queue_size=1)
 
         # --- Sensor reading ---
         # Position
@@ -201,11 +224,14 @@ class HTTPDuckieServer(DTROS):
         self.route = route
 
     def update_state(self, new_state):
+        rospy.loginfo(f"Waiting for service {self.veh_name}/state_machine_node/change_mode")
         rospy.wait_for_service(
             f"/{self.veh_name}/state_machine_node/change_mode")
         state_machine_switch_node = rospy.ServiceProxy(
             f"/{self.veh_name}/state_machine_node/change_mode", SetFSMState)
+        rospy.loginfo(f"Changing state to {new_state}")
         state_machine_switch_node(new_state)
+        rospy.loginfo(f"Done changing state to {new_state}")
     
     def handle_image(self, data):
         """Store the fetched compressed image string"""

@@ -46,10 +46,10 @@ class StateMachineNode(DTROS):
             State.DRIVE_STRAIGHT: f'/{self.veh_name}/intersection_node/car_cmd',
         }
 
-        self.led_srv = f"/{self.veh_name}/led_emitter_node/set_pattern"
-        self.led_custom_srv = f"/{self.veh_name}/led_emitter_node/set_custom_pattern"
-        rospy.wait_for_service(self.led_srv)
-        rospy.wait_for_service(self.led_custom_srv)
+        # self.led_srv = f"/{self.veh_name}/led_emitter_node/set_pattern"
+        # self.led_custom_srv = f"/{self.veh_name}/led_emitter_node/set_custom_pattern"
+        # rospy.wait_for_service(self.led_srv)
+        # rospy.wait_for_service(self.led_custom_srv)
         # construct publisher --- publish to topic chatter
         self.mode_pub = rospy.Publisher(mode_topic, FSMState, queue_size=10)
         # construct subscriber --- subscribe to topic chatter
@@ -61,8 +61,8 @@ class StateMachineNode(DTROS):
         for source, topic in SOURCES.items():
             self.cmd_subs[source.value] = rospy.Subscriber(topic, Twist2DStamped, self.cb_car_cmd, callback_args=source.value)
 
-        self.current_state = State.IDLE.value
-        self.set_LEDs(self.current_state)
+        self.current_state = State.LANE_FOLLOWING.value
+        # self.set_LEDs(self.current_state)
 
     def stop_car(self):
         cmd = Twist2DStamped()
@@ -83,13 +83,12 @@ class StateMachineNode(DTROS):
         return []
 
     def cb_change_mode(self, incoming):
-        # self.loginfo(f"Request to change state received: {incoming.state}")
         self.loginfo(f"Request to change state received: {incoming.state}")
 
         if self.current_state != incoming.state:
             self.stop_car()
             self.current_state = incoming.state
-            self.set_LEDs(self.current_state)
+            # self.set_LEDs(self.current_state)
 
             message = FSMState()
             message.state = self.current_state
