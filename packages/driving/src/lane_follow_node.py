@@ -85,7 +85,7 @@ if __name__ == '__main__':
     
     while not rospy.is_shutdown():
         if node.t_since_last_cmd() > 1.0:
-            node.loginfo("CMD timeout")
+            # node.loginfo("CMD timeout")
             node.drive(0.0, 0.0)
 
         rate.sleep()

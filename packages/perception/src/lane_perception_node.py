@@ -47,23 +47,23 @@ class LanePerceptionNode(DTROS):
         rospy.set_param(f"/{self.veh_name}/lane_perception_node/red_line_length_threshold", 500)
 
         # sub, pub
-        self.mode_sub = rospy.Subscriber(f"/{self.veh_name}/state_machine_node/mode", FSMState, self.cb_on_mode_change)
+        # self.mode_sub = rospy.Subscriber(f"/{self.veh_name}/state_machine_node/mode", FSMState, self.cb_on_mode_change)
         # self.im_sub = rospy.Subscriber(f"/{self.veh_name}/camera_node/image/compressed", CompressedImage, self.cb_img, queue_size=1,
         #                                buff_size=1000000)
         # self.lane_det_pub = rospy.Publisher(f"/{self.veh_name}/lane_perception_node/lane_det", LaneDetection, queue_size=1)
-        self.line_pub = rospy.Publisher(f"/{self.veh_name}/lane_perception_node/lines/compressed", CompressedImage, queue_size=1)
+        # self.line_pub = rospy.Publisher(f"/{self.veh_name}/lane_perception_node/lines/compressed", CompressedImage, queue_size=1)
         # self.red_line_pub = rospy.Publisher(f"/{self.veh_name}/lane_perception_node/red_lines/compressed", CompressedImage, queue_size=1)
 
-        change_mode_srv = f"/{self.veh_name}/state_machine_node/change_mode"
-        self.mode_srv = rospy.ServiceProxy(change_mode_srv, SetFSMState)
+        # change_mode_srv = f"/{self.veh_name}/state_machine_node/change_mode"
+        # self.mode_srv = rospy.ServiceProxy(change_mode_srv, SetFSMState)
 
         # self.last_red = rospy.get_time()
         # self.red_active = False
 
         # self.rect_mat = None
 
-        self.image = None
-        self.loginfo("Initialized")
+        # self.image = None
+        # self.loginfo("Initialized")
         
         # self.loginfo(f"Use pytorch of version: {torch.__version__}")
         # self.loginfo(f"Use torchvision of version: {torchvision.__version__}")

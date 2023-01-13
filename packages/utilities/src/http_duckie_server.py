@@ -244,6 +244,7 @@ class HTTPDuckieServer(DTROS):
 
     def handle_FSM(self, data):
         """Store the fetched FSM state"""
+        # self.loginfo(f"Received FSM state {data.state}")
         self.state = data.state
         if self.state == 'WAITING':
             if len(node.route) > 0:

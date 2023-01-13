@@ -61,7 +61,7 @@ class StateMachineNode(DTROS):
         for source, topic in SOURCES.items():
             self.cmd_subs[source.value] = rospy.Subscriber(topic, Twist2DStamped, self.cb_car_cmd, callback_args=source.value)
 
-        self.current_state = State.LANE_FOLLOWING.value
+        self.current_state = State.IDLE.value
         # self.set_LEDs(self.current_state)
 
     def stop_car(self):
@@ -73,6 +73,7 @@ class StateMachineNode(DTROS):
 
     def cb_car_cmd(self, cmd, source):
         # forward car_cmd to wheels only if from current state
+        # self.loginfo(f"Received car_cmd {cmd} from {source} in state {self.current_state}")
         if source == self.current_state:
             self.wheel_cmd_pub.publish(cmd)
 
